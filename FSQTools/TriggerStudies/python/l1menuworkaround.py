@@ -1,6 +1,6 @@
 import FWCore.ParameterSet.Config as cms
 
-def L1SeedingWorkaround(process, path, l1filter):
+def l1menuworkaround(process, path, l1filter):
     import FWCore.ParameterSet.SequenceTypes as st
     if not hasattr(process, "dummyFilter"):
         dummy = cms.EDFilter("L1DummyFilter")
