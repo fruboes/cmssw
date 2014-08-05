@@ -79,9 +79,9 @@ bool
 L1JetsFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
     std::vector<edm::InputTag> todo;
-    todo.push_back(edm::InputTag("l1extraParticles", "Central", "RECO"));
-    todo.push_back(edm::InputTag("l1extraParticles", "Forward", "RECO"));
-    todo.push_back(edm::InputTag("l1extraParticles", "Tau", "RECO"));
+    todo.push_back(edm::InputTag("l1extraParticles", "Central"));
+    todo.push_back(edm::InputTag("l1extraParticles", "Forward"));
+    todo.push_back(edm::InputTag("l1extraParticles", "Tau"));
 
     //std::vector<reco::Candidate::LorentzVector> momenta;
     int cnt = 0;
