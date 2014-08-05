@@ -93,7 +93,7 @@ L1JetsFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
             //momenta.push_back(hL1->at(iL1).p4());
             float pt = std::abs(hL1->at(iL1).pt());
             if (pt < m_minPt) continue;
-            float eta = std::abs(hL1->at(iL1).eta());
+            float eta = hL1->at(iL1).eta();
             if (eta > m_maxEta) continue;
             if (eta < m_minEta) continue;
             ++cnt;
