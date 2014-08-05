@@ -29,6 +29,8 @@
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
+#include "DataFormats/L1Trigger/interface/L1JetParticleFwd.h"
+#include "DataFormats/L1Trigger/interface/L1JetParticle.h"
 //
 // class declaration
 //
@@ -44,11 +46,19 @@ class L1JetsFilter : public edm::EDFilter {
       virtual void beginJob() override;
       virtual bool filter(edm::Event&, const edm::EventSetup&) override;
       virtual void endJob() override;
+      float m_maxEta;
+      float m_minEta;
+      float m_minPt;
+      int m_minNum;
       
 };
 
 L1JetsFilter::L1JetsFilter(const edm::ParameterSet& iConfig)
 {
+        m_maxEta = iConfig.getParameter<double>("maxEta");
+        m_minEta = iConfig.getParameter<double>("minEta");
+        m_minPt = iConfig.getParameter<double>("minPt");
+        m_minNum = iConfig.getParameter<int>("minNum");
 
 }
 
@@ -68,7 +78,32 @@ L1JetsFilter::~L1JetsFilter()
 bool
 L1JetsFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
-   return true;
+    std::vector<edm::InputTag> todo;
+    todo.push_back(edm::InputTag("l1extraParticles", "Central", "RECO"));
+    todo.push_back(edm::InputTag("l1extraParticles", "Forward", "RECO"));
+    todo.push_back(edm::InputTag("l1extraParticles", "Tau", "RECO"));
+
+    //std::vector<reco::Candidate::LorentzVector> momenta;
+    int cnt = 0;
+    for (unsigned int i = 0; i < todo.size();++i){
+        edm::Handle<std::vector<l1extra::L1JetParticle> > hL1;
+        iEvent.getByLabel(todo.at(i), hL1);
+        for (unsigned iL1 = 0; iL1< hL1->size();++iL1){
+            if (hL1->at(iL1).bx()!=0) continue;
+            //momenta.push_back(hL1->at(iL1).p4());
+            float pt = std::abs(hL1->at(iL1).pt());
+            if (pt < m_minPt) continue;
+            float eta = std::abs(hL1->at(iL1).eta());
+            if (eta > m_maxEta) continue;
+            if (eta < m_minEta) continue;
+            ++cnt;
+        }
+    }
+    if (cnt < m_minNum) return false;
+    return true;
+
+
+
 }
 
 // ------------ method called once each job just before starting event loop  ------------
