@@ -50,6 +50,7 @@ class L1JetsFilter : public edm::EDFilter {
       float m_minEta;
       float m_minPt;
       int m_minNum;
+      std::string m_input;
       
 };
 
@@ -59,6 +60,8 @@ L1JetsFilter::L1JetsFilter(const edm::ParameterSet& iConfig)
         m_minEta = iConfig.getParameter<double>("minEta");
         m_minPt = iConfig.getParameter<double>("minPt");
         m_minNum = iConfig.getParameter<int>("minNum");
+        m_input = iConfig.getParameter<int>("input");
+
 
 }
 
@@ -79,9 +82,9 @@ bool
 L1JetsFilter::filter(edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
     std::vector<edm::InputTag> todo;
-    todo.push_back(edm::InputTag("l1extraParticles", "Central"));
-    todo.push_back(edm::InputTag("l1extraParticles", "Forward"));
-    todo.push_back(edm::InputTag("l1extraParticles", "Tau"));
+    todo.push_back(edm::InputTag(m_input, "Central"));
+    todo.push_back(edm::InputTag(m_input, "Forward"));
+    todo.push_back(edm::InputTag(m_input, "Tau"));
 
     //std::vector<reco::Candidate::LorentzVector> momenta;
     int cnt = 0;
