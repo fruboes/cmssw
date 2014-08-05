@@ -60,7 +60,7 @@ L1JetsFilter::L1JetsFilter(const edm::ParameterSet& iConfig)
         m_minEta = iConfig.getParameter<double>("minEta");
         m_minPt = iConfig.getParameter<double>("minPt");
         m_minNum = iConfig.getParameter<int>("minNum");
-        m_input = iConfig.getParameter<int>("input");
+        m_input = iConfig.getParameter<std::string>("input");
 
 
 }
