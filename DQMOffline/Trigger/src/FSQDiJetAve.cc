@@ -117,7 +117,10 @@ class HandlerTemplate: public BaseHandler {
         StringObjectFunction<std::vector<TOutputCandidateType> >     m_combinedObjectSortFunction;
         // TODO: auto ptr
         std::map<std::string, std::shared_ptr<StringObjectFunction<std::vector<TOutputCandidateType> > > > m_plotters;
-        std::vector< edm::ParameterSet > m_drawables;
+        /// xxx
+        ///std::map<std::string,  > m_plotterType;
+        std::vector< edm::ParameterSet > m_combinedObjectDrawables;
+        std::vector< edm::ParameterSet > m_singleObjectDrawables; // for all single objects passing preselection
         bool m_isSetup;
         edm::InputTag m_input;
 
@@ -137,7 +140,8 @@ class HandlerTemplate: public BaseHandler {
              m_filterPartialName = iConfig.getParameter<std::string>("partialFilterName"); // std::string find is used to match filter
              m_pathPartialName  = iConfig.getParameter<std::string>("partialPathName");
              m_combinedObjectDimension = iConfig.getParameter<int>("combinedObjectDimension");
-             m_drawables = iConfig.getParameter<  std::vector< edm::ParameterSet > >("drawables");
+             m_combinedObjectDrawables = iConfig.getParameter<  std::vector< edm::ParameterSet > >("combinedObjectDrawables");
+             m_singleObjectDrawables = iConfig.getParameter<  std::vector< edm::ParameterSet > >("singleObjectDrawables");
              m_isSetup = false;
         }
 
@@ -145,19 +149,23 @@ class HandlerTemplate: public BaseHandler {
             if(!m_isSetup){
                 booker.setCurrentFolder(m_dirname);
                 m_isSetup = true;
-                for (unsigned int i = 0; i < m_drawables.size(); ++i){
-                    std::string histoName = m_dqmhistolabel + "_" +m_drawables.at(i).getParameter<std::string>("name");
-                    std::string expression = m_drawables.at(i).getParameter<std::string>("expression");
-                    int bins =  m_drawables.at(i).getParameter<int>("bins");
-                    double rangeLow  =  m_drawables.at(i).getParameter<double>("min");
-                    double rangeHigh =  m_drawables.at(i).getParameter<double>("max");
+                std::vector< std::vector< edm::ParameterSet > * > todo;
+                todo.push_back(&m_combinedObjectDrawables);
+                todo.push_back(&m_singleObjectDrawables);
+                for (size_t ti =0; ti<todo.size();++ti){
+                    for (unsigned int i = 0; i < todo[ti]->size(); ++i){
+                        std::string histoName = m_dqmhistolabel + "_" + todo[ti]->at(i).getParameter<std::string>("name");
+                        std::string expression = todo[ti]->at(i).getParameter<std::string>("expression");
+                        int bins =  todo[ti]->at(i).getParameter<int>("bins");
+                        double rangeLow  =  todo[ti]->at(i).getParameter<double>("min");
+                        double rangeHigh =  todo[ti]->at(i).getParameter<double>("max");
+                        m_histos[histoName] =  booker.book1D(histoName, histoName, bins, rangeLow, rangeHigh);
+                        StringObjectFunction<std::vector<TOutputCandidateType> > * func 
+                                = new StringObjectFunction<std::vector<TOutputCandidateType> >(expression);
+                        m_plotters[histoName] =  std::shared_ptr<StringObjectFunction<std::vector<TOutputCandidateType> > >(func);
+                    }   
+                }
 
-                    m_histos[histoName] =  booker.book1D(histoName, histoName, bins, rangeLow, rangeHigh);
-                    StringObjectFunction<std::vector<TOutputCandidateType> > * func 
-                            = new StringObjectFunction<std::vector<TOutputCandidateType> >(expression);
-                    m_plotters[histoName] =  std::shared_ptr<StringObjectFunction<std::vector<TOutputCandidateType> > >(func);
-
-                }   
             }
         }
 
@@ -173,7 +181,8 @@ class HandlerTemplate: public BaseHandler {
                      const edm::Event& iEvent,
                      const edm::EventSetup& iSetup,
                      const HLTConfigProvider&  hltConfig,
-                     const trigger::TriggerEvent& trgEvent)
+                     const trigger::TriggerEvent& trgEvent,
+                     float weight)
         {
                Handle<std::vector<TInputCandidateType> > hIn;
                iEvent.getByLabel(InputTag(m_input), hIn);
@@ -277,7 +286,7 @@ class HandlerTemplate: public BaseHandler {
             if (!triggerResults.accept(indexNum)) return;*/
 
             std::vector<TOutputCandidateType> cands;
-            getFilteredCands((TInputCandidateType *)0, cands, iEvent, iSetup, hltConfig, trgEvent);
+            getFilteredCands((TInputCandidateType *)0, cands, iEvent, iSetup, hltConfig, trgEvent, weight);
 
             if (cands.size()==0) return;
 
@@ -387,7 +396,8 @@ void HandlerTemplate<reco::Candidate::LorentzVector, reco::Candidate::LorentzVec
              const edm::Event& iEvent,  
              const edm::EventSetup& iSetup,
              const HLTConfigProvider&  hltConfig,
-             const trigger::TriggerEvent& trgEvent)
+             const trigger::TriggerEvent& trgEvent,
+             float weight)
 {  
    Handle<View<reco::Candidate> > hIn;
    iEvent.getByLabel(InputTag(m_input), hIn);
@@ -438,7 +448,7 @@ void HandlerTemplate<reco::Track, int >::getFilteredCands(
              reco::Track *, // pass a dummy pointer, makes possible to select correct getFilteredCands
              std::vector<int > & cands, // output collection
              const edm::Event& iEvent, const edm::EventSetup& iSetup,
-             const HLTConfigProvider&  hltConfig,  const trigger::TriggerEvent& trgEvent)
+             const HLTConfigProvider&  hltConfig,  const trigger::TriggerEvent& trgEvent, float weight)
 {  
    cands.clear();
    cands.push_back(count<reco::Track>(iEvent, m_input, m_singleObjectSelection) );
@@ -448,7 +458,7 @@ void HandlerTemplate<reco::GenParticle, int >::getFilteredCands(
              reco::GenParticle *, // pass a dummy pointer, makes possible to select correct getFilteredCands
              std::vector<int > & cands, // output collection
              const edm::Event& iEvent, const edm::EventSetup& iSetup,
-             const HLTConfigProvider&  hltConfig, const trigger::TriggerEvent& trgEvent)
+             const HLTConfigProvider&  hltConfig, const trigger::TriggerEvent& trgEvent, float weight)
 {
    cands.clear();
    cands.push_back(count<reco::GenParticle>(iEvent, m_input, m_singleObjectSelection) );
@@ -468,7 +478,8 @@ void HandlerTemplate<reco::Track, int, BestVertexMatching>::getFilteredCands(
              const edm::Event& iEvent,  
              const edm::EventSetup& iSetup,
              const HLTConfigProvider&  hltConfig,
-             const trigger::TriggerEvent& trgEvent)
+             const trigger::TriggerEvent& trgEvent,
+             float weight)
 {  
     // this is not elegant, but should be thread safe
     static const edm::InputTag lVerticesTag = m_pset.getParameter<edm::InputTag>("vtxCollection");
@@ -543,7 +554,8 @@ void HandlerTemplate<reco::Candidate::LorentzVector, int >::getFilteredCands(
              const edm::Event& iEvent,  
              const edm::EventSetup& iSetup,
              const HLTConfigProvider&  hltConfig,
-             const trigger::TriggerEvent& trgEvent)
+             const trigger::TriggerEvent& trgEvent,
+             float weight)
 {  
    cands.clear();
    cands.push_back(0);
@@ -573,7 +585,8 @@ void HandlerTemplate<trigger::TriggerObject, trigger::TriggerObject>::getFiltere
              const edm::Event& iEvent,  
              const edm::EventSetup& iSetup,
              const HLTConfigProvider&  hltConfig,
-             const trigger::TriggerEvent& trgEvent)
+             const trigger::TriggerEvent& trgEvent,
+             float weight)
 {
     // 1. Find matching path. Inside matchin path find matching filter
     std::string filterFullName = findPathAndFilter(hltConfig)[1];

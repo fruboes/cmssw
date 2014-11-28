@@ -14,7 +14,9 @@ import math
 #   other handlers read data from collection pointed by inputCol parameter 
 #       (partialFilterName, partialPathName params are ignored)
 #
-
+#   note: be extra carefull when using singleObject and combinedObject drawables in same
+#          handler definition. Histo names may be the same, currently there is no protection against it
+#
 def getHighMultVPSet():
     ret=cms.VPSet()
     thresholds = [60, 85, 110, 135, 160]
@@ -41,10 +43,11 @@ def getHighMultVPSet():
                 dqmhistolabel  = cms.string("recoTracks"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("pt > 0.4 && abs(eta) < 2.4"), 
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("1==1"),
                 combinedObjectSortCriteria = cms.string('size()'),
                 combinedObjectDimension = cms.int32(1),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("count_nominator"), expression = cms.string('at(0)'), 
                              bins = cms.int32(bins), min = cms.double(binL), max = cms.double(binH))
                 )
@@ -54,35 +57,31 @@ def getHighMultVPSet():
         tracksCountDenom = tracksCount.clone()
         alwaysTrue = partialPathName+"*" + " OR NOT " + partialPathName+"*"
         tracksCountDenom.triggerSelection = cms.string(alwaysTrue)
-        tracksCountDenom.drawables =  cms.VPSet(
+        tracksCountDenom.combinedObjectDrawables =  cms.VPSet(
             cms.PSet (name = cms.string("count_denominator"), expression = cms.string("at(0)"),
                              bins = cms.int32(bins), min = cms.double(binL), max = cms.double(binH))
         )
         ret.append(tracksCountDenom)
 
 
-
-
-        ptEtaHardest  =  cms.PSet(
-                triggerSelection = cms.string(partialPathName+"*"),
-                handlerType = cms.string("RecoTrack"),
-                inputCol = cms.InputTag("hltPixelTracksForHighMult"),
-                partialPathName = cms.string(partialPathName),
-                partialFilterName  = cms.string("hltL1sETT"),
-                dqmhistolabel  = cms.string("hltPixelTracksPtEtaHardest"),
-                mainDQMDirname = cms.untracked.string(fsqdirname),
-                singleObjectsPreselection = cms.string(""),
-                combinedObjectSelection =  cms.string("1==1"),
-                combinedObjectSortCriteria = cms.string("at(0).pt"),
-                combinedObjectDimension = cms.int32(1),
-                drawables =  cms.VPSet(
-                    cms.PSet (name = cms.string("pt"), expression = cms.string("at(0).pt"), 
-                            bins = cms.int32(50), min = cms.double(0), max = cms.double(50)),
-                    cms.PSet (name = cms.string("eta"), expression = cms.string("at(0).eta"), 
-                            bins = cms.int32(50), min = cms.double(-2.5), max = cms.double(2.5))
-                )
+        hltPixelTracks =  cms.PSet(
+            triggerSelection = cms.string(partialPathName+"*"),
+            handlerType = cms.string("FromHLT"),
+            partialPathName = cms.string(partialPathName),
+            partialFilterName  = cms.string("hlt1HighMult"),
+            dqmhistolabel  = cms.string("hltPixelTracks"),
+            mainDQMDirname = cms.untracked.string(fsqdirname),
+            singleObjectsPreselection = cms.string("1==1"),
+            singleObjectDrawables =  cms.VPSet(
+                cms.PSet (name = cms.string("pt"), expression = cms.string("pt"), bins = cms.int32(20), min = cms.double(0), max = cms.double(10)),
+                cms.PSet (name = cms.string("eta"), expression = cms.string("eta"), bins = cms.int32(100), min = cms.double(-2.5), max = cms.double(2.5))
+            ),
+            combinedObjectSelection =  cms.string("1==1"),
+            combinedObjectSortCriteria = cms.string("at(0).pt"),
+            combinedObjectDimension = cms.int32(1),
+            combinedObjectDrawables =  cms.VPSet()
         )
-        ret.append(ptEtaHardest) 
+        ret.append(hltPixelTracks)
 
         # FIXME: what variables it makes sense to plot in case of ETT seeds?
         l1 =  cms.PSet(
@@ -93,12 +92,12 @@ def getHighMultVPSet():
                 dqmhistolabel  = cms.string("l1"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("1==1"),
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("1==1"),
                 combinedObjectSortCriteria = cms.string("at(0).pt"),
                 combinedObjectDimension = cms.int32(1),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("pt"), expression = cms.string("at(0).pt"), bins = cms.int32(256/4), min = cms.double(0), max = cms.double(256)),
-                    cms.PSet (name = cms.string("eta"), expression = cms.string("at(0).eta"), bins = cms.int32(104/4), min = cms.double(-5.2), max = cms.double(5.2))
                 )
         )
         ret.append(l1) 
@@ -128,10 +127,11 @@ def getPTAveVPSet():
                 dqmhistolabel  = cms.string("hltCaloJets"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("abs(eta)<1.4 || abs(eta) > 2.7 "),
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("1==1"),
                 combinedObjectSortCriteria = cms.string("at(0).pt"),
                 combinedObjectDimension = cms.int32(1),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("pt"), expression = cms.string("at(0).pt"), bins = cms.int32(ptBins), min = cms.double(ptBinLow), max = cms.double(ptBinHigh)),
                     cms.PSet (name = cms.string("eta"), expression = cms.string("at(0).eta"), bins = cms.int32(104), min = cms.double(-5.2), max = cms.double(5.2))
                 )
@@ -146,10 +146,11 @@ def getPTAveVPSet():
                 dqmhistolabel  = cms.string("l1"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("1==1"),
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("1==1"),
                 combinedObjectSortCriteria = cms.string("at(0).pt"),
                 combinedObjectDimension = cms.int32(1),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("pt"), expression = cms.string("at(0).pt"), bins = cms.int32(256/4), min = cms.double(0), max = cms.double(256)),
                     cms.PSet (name = cms.string("eta"), expression = cms.string("at(0).eta"), bins = cms.int32(104/4), min = cms.double(-5.2), max = cms.double(5.2))
                 )
@@ -165,10 +166,11 @@ def getPTAveVPSet():
                 dqmhistolabel  = cms.string("hltpfsingle"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("abs(eta)<1.4 || abs(eta) > 2.7 "),
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("1==1"),
                 combinedObjectSortCriteria = cms.string("at(0).pt"),
                 combinedObjectDimension = cms.int32(1),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("pt"), expression = cms.string("at(0).pt"), bins = cms.int32(ptBins), min = cms.double(ptBinLow), max = cms.double(ptBinHigh)),
                     cms.PSet (name = cms.string("eta"), expression = cms.string("at(0).eta"), bins = cms.int32(104), min = cms.double(-5.2), max = cms.double(5.2))
                 )
@@ -185,10 +187,11 @@ def getPTAveVPSet():
                 dqmhistolabel  = cms.string("hltPFJetsTopology"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("abs(eta)<1.4 || abs(eta) > 2.7 "),
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("abs(at(0).eta())< 1.4 && abs(at(1).eta()) > 2.7 && abs(deltaPhi(at(0).phi, at(1).phi)) > 2.5"),
                 combinedObjectSortCriteria = cms.string("(at(0).pt+at(1).pt)/2"),
                 combinedObjectDimension = cms.int32(2),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("deltaEta"), expression = cms.string("abs(at(0).eta-at(1).eta)"), 
                              bins = cms.int32(70), min = cms.double(0), max = cms.double(7)),
                     cms.PSet (name = cms.string("deltaPhi"), expression = cms.string("abs(deltaPhi(at(0).phi, at(1).phi))"), 
@@ -219,10 +222,11 @@ def getPTAveVPSet():
                 dqmhistolabel  = cms.string("recoJet"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("pt > + "+str(recoThr) +" && (abs(eta)<1.3 || abs(eta) > 2.8) "),
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("1==1"),
                 combinedObjectSortCriteria = cms.string("at(0).pt"),
                 combinedObjectDimension = cms.int32(1),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("pt"), expression = cms.string("at(0).pt"), bins = cms.int32(ptBins), min = cms.double(ptBinLow), max = cms.double(ptBinHigh)),
                     cms.PSet (name = cms.string("eta"), expression = cms.string("at(0).eta"), bins = cms.int32(52), min = cms.double(-5.2), max = cms.double(5.2))
                 )
@@ -239,10 +243,11 @@ def getPTAveVPSet():
                 dqmhistolabel  = cms.string("recoPFJetsTopology"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("pt > + "+str(recoThr) +" && abs(eta)<1.4 || abs(eta) > 2.7 "),
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("abs(at(0).eta())< 1.3 && abs(at(1).eta()) > 2.8 && abs(deltaPhi(at(0).phi, at(1).phi)) > 2.5"),
                 combinedObjectSortCriteria = cms.string("(at(0).pt+at(1).pt)/2"),
                 combinedObjectDimension = cms.int32(2),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("deltaEta"), expression = cms.string("abs(at(0).eta-at(1).eta)"), 
                              bins = cms.int32(70), min = cms.double(0), max = cms.double(7)),
                     cms.PSet (name = cms.string("deltaPhi"), expression = cms.string("abs(deltaPhi(at(0).phi, at(1).phi))"), 
@@ -263,7 +268,7 @@ def getPTAveVPSet():
             alwaysTrue = partialPathName+"*" + " OR NOT " + partialPathName+"*"
             #recoPFtopologyDenom.triggerSelection = cms.string(partialPathName+"*")
             recoPFtopologyDenom.triggerSelection = cms.string(alwaysTrue)
-            recoPFtopologyDenom.drawables =  cms.VPSet(
+            recoPFtopologyDenom.combinedObjectDrawables =  cms.VPSet(
                 cms.PSet (name = cms.string("ptAve_denominator"), expression = cms.string("(at(0).pt+at(1).pt)/2"),
                              bins = cms.int32(ptBins), min = cms.double(ptBinLow), max = cms.double(ptBinHigh)  )
             )
@@ -281,10 +286,11 @@ def getPTAveVPSet():
                 dqmhistolabel  = cms.string("recoPFJetsCnt"),
                 mainDQMDirname = cms.untracked.string(fsqdirname),
                 singleObjectsPreselection = cms.string("pt > + "+str(recoThr) +" && abs(eta)<1.4 || abs(eta) > 2.7 "),
+                singleObjectDrawables =  cms.VPSet(),
                 combinedObjectSelection =  cms.string("1==1"),
                 combinedObjectSortCriteria = cms.string('size()'),
                 combinedObjectDimension = cms.int32(1),
-                drawables =  cms.VPSet(
+                combinedObjectDrawables =  cms.VPSet(
                     cms.PSet (name = cms.string("count"), expression = cms.string('at(0)'), 
                              bins = cms.int32(30), min = cms.double(0), max = cms.double(30))
                 )
@@ -295,8 +301,6 @@ def getPTAveVPSet():
     return ret
 
 
-
-
 def getFSQAll():
     ret = cms.VPSet()
     ret.extend(getHighMultVPSet())
@@ -305,18 +309,6 @@ def getFSQAll():
 
 
 fsqdirname = "HLT/FSQ/"
-
-fsqDiJetEfficiencies = cms.EDAnalyzer("DQMGenericClient",
-    subDirs        = cms.untracked.vstring(fsqdirname+"HLT_DiPFJetAve*", fsqdirname+"HLT_PixelTracks_Multiplicity*"),
-    verbose        = cms.untracked.uint32(0), # Set to 2 for all messages
-    outputFileName = cms.untracked.string(''),
-    commands       = cms.vstring(),
-    resolution     = cms.vstring(),
-    efficiency     = cms.vstring(
-        "effVsRecoPtAve 'Trigger efficiency vs reco ptAve; average p_{T}^{reco}' recoPFJetsTopology_ptAve_nominator recoPFJetsTopology_ptAve_denominator",
-        "effVsRecoTracksCnt 'Trigger efficiency vs reco tracks count' recoTracks_count_nominator recoTracks_count_denominator"
-    ),
-)
 
 #processName = "HLT"
 processName = "TEST"
