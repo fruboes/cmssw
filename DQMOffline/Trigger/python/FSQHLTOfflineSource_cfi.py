@@ -314,8 +314,8 @@ def getFSQAll():
 
 fsqdirname = "HLT/FSQ/"
 
-#processName = "HLT"
-processName = "TEST"
+processName = "HLT"
+#processName = "TEST"
 
 fsqHLTOfflineSource = cms.EDAnalyzer("FSQDiJetAve",
     triggerConfiguration =  cms.PSet(
