@@ -115,10 +115,12 @@ class HandlerTemplate: public BaseHandler {
         StringCutObjectSelector<TInputCandidateType>  m_singleObjectSelection;
         StringCutObjectSelector<std::vector<TOutputCandidateType> >  m_combinedObjectSelection;
         StringObjectFunction<std::vector<TOutputCandidateType> >     m_combinedObjectSortFunction;
-        // TODO: auto ptr
-        std::map<std::string, std::shared_ptr<StringObjectFunction<std::vector<TOutputCandidateType> > > > m_plotters;
+        std::map<std::string, std::shared_ptr<StringObjectFunction<std::vector<TOutputCandidateType> > > > m_plottersCombinedObject;
+        std::map<std::string, std::shared_ptr<StringObjectFunction<TInputCandidateType > > > m_plottersSingleObject;
         /// xxx
-        ///std::map<std::string,  > m_plotterType;
+        static const int SingleObjectPlotter = 0;
+        static const int CombinedObjectPlotter = 1;
+        std::map<std::string, int > m_plotterType;
         std::vector< edm::ParameterSet > m_combinedObjectDrawables;
         std::vector< edm::ParameterSet > m_singleObjectDrawables; // for all single objects passing preselection
         bool m_isSetup;
@@ -149,9 +151,9 @@ class HandlerTemplate: public BaseHandler {
             if(!m_isSetup){
                 booker.setCurrentFolder(m_dirname);
                 m_isSetup = true;
-                std::vector< std::vector< edm::ParameterSet > * > todo;
-                todo.push_back(&m_combinedObjectDrawables);
-                todo.push_back(&m_singleObjectDrawables);
+                std::vector< std::vector< edm::ParameterSet > * > todo(2, (std::vector< edm::ParameterSet > * )0);
+                todo[CombinedObjectPlotter]=&m_combinedObjectDrawables;
+                todo[SingleObjectPlotter]=&m_singleObjectDrawables;
                 for (size_t ti =0; ti<todo.size();++ti){
                     for (unsigned int i = 0; i < todo[ti]->size(); ++i){
                         std::string histoName = m_dqmhistolabel + "_" + todo[ti]->at(i).getParameter<std::string>("name");
@@ -160,23 +162,65 @@ class HandlerTemplate: public BaseHandler {
                         double rangeLow  =  todo[ti]->at(i).getParameter<double>("min");
                         double rangeHigh =  todo[ti]->at(i).getParameter<double>("max");
                         m_histos[histoName] =  booker.book1D(histoName, histoName, bins, rangeLow, rangeHigh);
-                        StringObjectFunction<std::vector<TOutputCandidateType> > * func 
-                                = new StringObjectFunction<std::vector<TOutputCandidateType> >(expression);
-                        m_plotters[histoName] =  std::shared_ptr<StringObjectFunction<std::vector<TOutputCandidateType> > >(func);
+                        m_plotterType[histoName] = ti;
+                        if (ti == CombinedObjectPlotter){
+                            StringObjectFunction<std::vector<TOutputCandidateType> > * func 
+                                    = new StringObjectFunction<std::vector<TOutputCandidateType> >(expression);
+                            m_plottersCombinedObject[histoName] =  std::shared_ptr<StringObjectFunction<std::vector<TOutputCandidateType> > >(func);
+                        } else {
+                            StringObjectFunction< TInputCandidateType>  * func 
+                                    = new StringObjectFunction< TInputCandidateType> (expression);
+                            m_plottersSingleObject[histoName] =  std::shared_ptr<StringObjectFunction<TInputCandidateType> > (func);
+                        }
                     }   
                 }
-
             }
         }
+        //#############################################################################
+        // Count objects. To avoid code duplication we do it in a separate template -
+        //  - partial specialization not easy...:
+        // http://stackoverflow.com/questions/21182729/specializing-single-method-in-a-big-template-class
+        //#############################################################################
+        template <class T>
+        int count(const edm::Event& iEvent, InputTag &input, StringCutObjectSelector<T> & sel, float weight){
+           int ret = 0;
+           Handle<std::vector< T > > hIn;
+           iEvent.getByLabel(InputTag(input), hIn);
+           if(!hIn.isValid()) {
+              edm::LogError("FSQDiJetAve") << "product not found: "<<  input.encode();
+              return -1;  // return nonsense value
+           }
+           for (unsigned int i = 0; i<hIn->size(); ++i) {
+                bool preselection = sel(hIn->at(i));
+                if (preselection){
+                    fillSingleObjectPlots(hIn->at(i), weight);
+                    ret+=1;
+                }
+           }
+           return ret;
+        }
 
+        // FIXME (?): code duplication
+        void fillSingleObjectPlots(const TInputCandidateType & cand, float weight){
+            std::map<std::string,  MonitorElement*>::iterator it, itE;
+            it = m_histos.begin();
+            itE = m_histos.end();
+            for (;it!=itE;++it){
+                if (m_plotterType[it->first]!=SingleObjectPlotter) continue;
+                float val = (*m_plottersSingleObject[it->first])(cand);
+                it->second->Fill(val, weight);
+            }
+        }
         // Notes:
+        //  - this function (and specialized versions) are responsible for calling
+        //     fillSingleObjectPlots for all single objects passing the single
+        //     object preselection criteria
         //  - FIXME this function should take only event/ event setup (?)
         //  - FIXME responsibility to apply preselection should be elsewhere
         //          hard to fix, since we dont want to copy all objects due to
         //          performance reasons
-        //
-        //           implementation below working when in/out types are equal
-        //           in other cases you must provide specialized version (see below)
+        //  - note: implementation below working when in/out types are equal
+        //          in other cases you must provide specialized version (see below)
         void getFilteredCands(TInputCandidateType *, std::vector<TOutputCandidateType> & cands,
                      const edm::Event& iEvent,
                      const edm::EventSetup& iSetup,
@@ -191,10 +235,10 @@ class HandlerTemplate: public BaseHandler {
                   return;  
                }
 
-
                for (unsigned int i = 0; i<hIn->size(); ++i) {
                     bool preselection = m_singleObjectSelection(hIn->at(i));
                     if (preselection){
+                        fillSingleObjectPlots(hIn->at(i), weight);
                         cands.push_back(hIn->at(i));
                     }
                }
@@ -271,7 +315,6 @@ class HandlerTemplate: public BaseHandler {
             }
             if (not (*m_expression)(*m_eventCache)) return;
 
-
             /*
             std::vector<std::string> pathAndFilter = findPathAndFilter(hltConfig);
 
@@ -298,7 +341,8 @@ class HandlerTemplate: public BaseHandler {
             it = m_histos.begin();
             itE = m_histos.end();
             for (;it!=itE;++it){
-                float val = (*m_plotters[it->first])(bestCombinationFromCands);
+                if (m_plotterType[it->first]!=CombinedObjectPlotter) continue;
+                float val = (*m_plottersCombinedObject[it->first])(bestCombinationFromCands);
                 it->second->Fill(val, weight);
             }
         }
@@ -327,18 +371,10 @@ class HandlerTemplate: public BaseHandler {
                 it = std::unique(currentCombinationCopy.begin(), currentCombinationCopy.end());
                 currentCombinationCopy.resize( std::distance(currentCombinationCopy.begin(),it) );
                 bool duplicatesPresent = currentCombination.size() != currentCombinationCopy.size();
-
                 // 2. If no duplicates found - 
                 //          - check if current combination passes the cut
                 //          - rank current combination
                 if (!duplicatesPresent) { // no duplicates, we can consider this combined object
-                    /*
-                    std::cout << cnt << " " << duplicatesPresent << " ";
-                    for (int i = 0; i< dimension; ++i){
-                        std::cout << cands.at(currentCombination.at(i));
-                    }
-                    std::cout << std::endl;
-                    // */
                     std::vector<TOutputCandidateType > currentCombinationFromCands;
                     for (int i = 0; i<m_combinedObjectDimension;++i){
                         currentCombinationFromCands.push_back( cands.at(currentCombination.at(i)));
@@ -356,7 +392,6 @@ class HandlerTemplate: public BaseHandler {
                         }
                     }
                 }
-
                 // 3. Prepare next combination to test
                 //    note to future self: less error prone method with modulo
                 currentCombination.at(m_combinedObjectDimension-1)+=1; // increase last number
@@ -379,15 +414,12 @@ class HandlerTemplate: public BaseHandler {
             }
             return bestCombinationFromCands;
         }
-
 };
 //#############################################################################
-//
 // Read any object inheriting from reco::Candidate. Save p4
 //
 //  problem: for reco::Candidate there is no reflex dictionary, so selector
 //  wont work
-//
 //#############################################################################
 template<>
 void HandlerTemplate<reco::Candidate::LorentzVector, reco::Candidate::LorentzVector>::getFilteredCands(
@@ -408,33 +440,10 @@ void HandlerTemplate<reco::Candidate::LorentzVector, reco::Candidate::LorentzVec
    for (unsigned int i = 0; i<hIn->size(); ++i) {
         bool preselection = m_singleObjectSelection(hIn->at(i).p4());
         if (preselection){
+            fillSingleObjectPlots(hIn->at(i).p4(), weight);
             cands.push_back(hIn->at(i).p4());
         }
    }
-}
-//#############################################################################
-//
-// Count objects. To avoid code duplication we do it in a separate template -
-//  - partial specialization not easy...:
-// http://stackoverflow.com/questions/21182729/specializing-single-method-in-a-big-template-class
-//
-//#############################################################################
-template <class TInputClass>
-int count(const edm::Event& iEvent, InputTag &input, StringCutObjectSelector<TInputClass> & sel){
-   int ret = 0;
-   Handle<std::vector< TInputClass > > hIn;
-   iEvent.getByLabel(InputTag(input), hIn);
-   if(!hIn.isValid()) {
-      edm::LogError("FSQDiJetAve") << "product not found: "<<  input.encode();
-      return -1;  // return nonsense value
-   }
-   for (unsigned int i = 0; i<hIn->size(); ++i) {
-        bool preselection = sel(hIn->at(i));
-        if (preselection){
-            ret+=1;
-        }
-   }
-   return ret;
 }
 //#############################################################################
 //
@@ -451,7 +460,7 @@ void HandlerTemplate<reco::Track, int >::getFilteredCands(
              const HLTConfigProvider&  hltConfig,  const trigger::TriggerEvent& trgEvent, float weight)
 {  
    cands.clear();
-   cands.push_back(count<reco::Track>(iEvent, m_input, m_singleObjectSelection) );
+   cands.push_back(count<reco::Track>(iEvent, m_input, m_singleObjectSelection, weight) );
 }
 template<>
 void HandlerTemplate<reco::GenParticle, int >::getFilteredCands(
@@ -461,7 +470,7 @@ void HandlerTemplate<reco::GenParticle, int >::getFilteredCands(
              const HLTConfigProvider&  hltConfig, const trigger::TriggerEvent& trgEvent, float weight)
 {
    cands.clear();
-   cands.push_back(count<reco::GenParticle>(iEvent, m_input, m_singleObjectSelection) );
+   cands.push_back(count<reco::GenParticle>(iEvent, m_input, m_singleObjectSelection, weight) );
 }
 //#############################################################################
 //
@@ -569,6 +578,7 @@ void HandlerTemplate<reco::Candidate::LorentzVector, int >::getFilteredCands(
    for (unsigned int i = 0; i<hIn->size(); ++i) {
         bool preselection = m_singleObjectSelection(hIn->at(i).p4());
         if (preselection){
+            fillSingleObjectPlots(hIn->at(i).p4(), weight);
             cands.at(0)+=1;
         }
    }
@@ -613,6 +623,7 @@ void HandlerTemplate<trigger::TriggerObject, trigger::TriggerObject>::getFiltere
     for(;kj != khlt.end(); ++kj){
         bool preselection = m_singleObjectSelection(toc[*kj]);
         if (preselection){
+            fillSingleObjectPlots(toc[*kj], weight);
             cands.push_back( toc[*kj]);
         }
     }
