@@ -25,22 +25,40 @@ namespace Rivet {
 
     /// Book histograms and initialise projections before the run
     void init() {
-        FinalState fs;
-        addProjection(fs, "FS");
-        addProjection(FastJets(fs, FastJets::ANTIKT, 0.5),"Jets");
+       FinalState fs;
+       addProjection(fs, "FS");
+       addProjection(FastJets(fs, FastJets::ANTIKT, 0.5),"Jets");
 
-      /// @todo Initialise and register projections here
+       std::vector<double> bins;
+       bins.push_back(0.0);
+       bins.push_back(0.5);
+       bins.push_back(1.0);
+       bins.push_back(1.5);
+       bins.push_back(2.0);
+       bins.push_back(2.5);
+       bins.push_back(3.0);
+       bins.push_back(3.5);
+       bins.push_back(4.0);
+       bins.push_back(4.5);
+       bins.push_back(5.0);
+       bins.push_back(5.5);
+       bins.push_back(6.0);
+       bins.push_back(7.0);
+       bins.push_back(8.0);
+       bins.push_back(9.4);
 
-      /// @todo Book histograms here, e.g.:
-      // _h_XXXX = bookProfile1D(1, 1, 1);
-      // _h_YYYY = bookHisto1D(2, 1, 1);
-      //
+
       _anaTypes.push_back("InclusiveBasic");
       _anaTypes.push_back("InclusiveAsym");
       _anaTypes.push_back("InclusiveWindow");
       _anaTypes.push_back("MNBasic");
       _anaTypes.push_back("MNAsym");
       _anaTypes.push_back("MNWindow");
+      for (size_t iAna = 0; iAna < _anaTypes.size(); ++iAna){
+          std::string aType = _anaTypes.at(iAna);
+          _histos[aType] = bookHisto1D(aType, bins);
+          _histos[aType+"Unit"] = bookHisto1D(aType+"Unit", bins);
+      }
     }
 
 
@@ -62,7 +80,11 @@ namespace Rivet {
           std::vector<Jet> jetsCopy;
           std::string aType = _anaTypes.at(iAna);
           if (aType == "InclusiveWindow" || aType == "MNWindow") {
+            // why crash?
             //std::copy_if (jets.begin(), jets.end(), jetsCopy.begin(), [](  Jet  j){ return j.momentum().pt() < 55.;} );
+            for (size_t iJet = 0; iJet < jets.size();++iJet){
+                if (jets.at(iJet).momentum().pt() < 55) jetsCopy.push_back(jets.at(iJet));
+            }
           } else {
             jetsCopy.insert(jetsCopy.begin(), jets.begin(), jets.end());
           }
@@ -98,8 +120,9 @@ namespace Rivet {
               }
           }
           for (size_t ideta = 0; ideta < dEtas.size(); ++ideta){
-                // Fill(dEtas.at(ideta),  weight)
-                std::cout << aType << " " << dEtas.at(ideta) << " " << weight << std::endl;
+                _histos[aType]->fill(dEtas.at(ideta),  weight);
+                _histos[aType+"Unit"]->fill(dEtas.at(ideta),  weight);
+                //std::cout << aType << " " << dEtas.at(ideta) << " " << weight << std::endl;
           }
           // */
       }  
@@ -107,12 +130,11 @@ namespace Rivet {
 
     /// Normalise histograms etc., after the run
     void finalize() {
-
-      /// @todo Normalise, scale and otherwise manipulate histograms here
-
-      // scale(_h_YYYY, crossSection()/sumOfWeights()); // norm to cross section
-      // normalize(_h_YYYY); // normalize to unity
-
+      for (size_t iAna = 0; iAna < _anaTypes.size(); ++iAna){
+          std::string aType = _anaTypes.at(iAna);
+          scale(_histos[aType], crossSection()/sumOfWeights());
+          normalize(_histos[aType+"Unit"]);
+      }
     }
 
     //@}
@@ -125,8 +147,7 @@ namespace Rivet {
 
     /// @name Histograms
     //@{
-    Profile1DPtr _h_XXXX;
-    Histo1DPtr _h_YYYY;
+    std::map<std::string, Histo1DPtr> _histos;
 
     std::vector<std::string> _anaTypes;
     //@}
