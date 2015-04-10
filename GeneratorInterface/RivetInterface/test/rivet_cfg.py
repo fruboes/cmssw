@@ -2,7 +2,7 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: Configuration/GenProduction/python/SevenTeV/QCD_Pt_470to600_Tune4C_7TeV_pythia8_cff.py -s GEN --datatier=GEN-SIM-RAW --conditions auto:mc --eventcontent RAWSIM --no_exec -n 10000 --python_filename=rivet_cfg.py --customise=Configuration/GenProduction/rivet_customize.py
+# with command line options: --evt_type Configuration/GenProduction/python/SevenTeV/QCD_Pt_15to3000_TuneZ2star_Flat_7TeV_pythia6_cff.py -s GEN --datatier=GEN-SIM-RAW --conditions auto:mc --eventcontent RAWSIM --no_exec -n 10000 --python_filename=rivet_cfg.py --customise=Configuration/GenProduction/rivet_customize.py --evt_type Configuration/GenProduction/python/SevenTeV/QCD_Pt_15to3000_TuneZ2star_Flat_7TeV_pythia6_cff.py
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process('GEN')
@@ -16,13 +16,13 @@ process.load('SimGeneral.MixingModule.mixNoPU_cfi')
 process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
 process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 process.load('Configuration.StandardSequences.Generator_cff')
-process.load('IOMC.EventVertexGenerators.VtxSmearedRealistic8TeVCollision_cfi')
+process.load('IOMC.EventVertexGenerators.VtxSmearedNominalCollision2015_cfi')
 process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
-process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(10000)
+    input = cms.untracked.int32(100)
 )
 
 # Input source
@@ -34,52 +34,73 @@ process.options = cms.untracked.PSet(
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
-    version = cms.untracked.string('\\$Revision: 1.1 $'),
-    annotation = cms.untracked.string('Sample with PYTHIA8: QCD dijet production, pThat = 470 .. 600 GeV, Tune4C'),
-    name = cms.untracked.string('\\$Source: /local/reps/CMSSW/CMSSW/Configuration/GenProduction/python/SevenTeV/QCD_Pt_470to600_Tune4C_7TeV_pythia8_cff.py,v $')
+    annotation = cms.untracked.string('Summer2011 sample with PYTHIA6: QCD dijet production, pThat = 15 .. 3000 GeV, weighted, TuneZ2star'),
+    name = cms.untracked.string('\\$Source: /local/reps/CMSSW/CMSSW/Configuration/GenProduction/python/Attic/QCD_Pt_15to3000_TuneZ2star_Flat_7TeV_pythia6_cff.py,v $'),
+    version = cms.untracked.string('\\$Revision: 1.9 $')
 )
 
 # Output definition
 
 process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
-    splitLevel = cms.untracked.int32(0),
-    eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
-    outputCommands = process.RAWSIMEventContent.outputCommands,
-    fileName = cms.untracked.string('QCD_Pt_470to600_Tune4C_7TeV_pythia8_cff_py_GEN.root'),
-    dataset = cms.untracked.PSet(
-        filterName = cms.untracked.string(''),
-        dataTier = cms.untracked.string('GEN-SIM-RAW')
-    ),
     SelectEvents = cms.untracked.PSet(
         SelectEvents = cms.vstring('generation_step')
-    )
+    ),
+    dataset = cms.untracked.PSet(
+        dataTier = cms.untracked.string('GEN-SIM-RAW'),
+        filterName = cms.untracked.string('')
+    ),
+    eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
+    fileName = cms.untracked.string('QCD_Pt_15to3000_TuneZ2star_Flat_7TeV_pythia6_cff_py_GEN.root'),
+    outputCommands = process.RAWSIMEventContent.outputCommands,
+    splitLevel = cms.untracked.int32(0)
 )
 
 # Additional output definition
 
 # Other statements
 process.genstepfilter.triggerConditions=cms.vstring("generation_step")
-from Configuration.AlCa.GlobalTag import GlobalTag
+from Configuration.AlCa.GlobalTag_condDBv2 import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
-process.generator = cms.EDFilter("Pythia8GeneratorFilter",
-    pythiaPylistVerbosity = cms.untracked.int32(0),
-    filterEfficiency = cms.untracked.double(1),
-    pythiaHepMCVerbosity = cms.untracked.bool(False),
-    comEnergy = cms.double(7000.0),
-    crossSection = cms.untracked.double(77.03948),
-    maxEventsToPrint = cms.untracked.int32(0),
+process.generator = cms.EDFilter("Pythia6GeneratorFilter",
     PythiaParameters = cms.PSet(
-        processParameters = cms.vstring('Main:timesAllowErrors    = 10000', 
-            'ParticleDecays:limitTau0 = on', 
-            'ParticleDecays:tauMax = 10', 
-            'HardQCD:all = on', 
-            'PhaseSpace:pTHatMin = 470 ', 
-            'PhaseSpace:pTHatMax = 600 ', 
-            'Tune:pp 5', 
-            'Tune:ee 3'),
-        parameterSets = cms.vstring('processParameters')
-    )
+        CSAParameters = cms.vstring('CSAMODE = 7     ! towards a flat QCD spectrum', 
+            'PTPOWER = 4.5   ! reweighting of the pt spectrum'),
+        parameterSets = cms.vstring('pythiaUESettings', 
+            'processParameters', 
+            'CSAParameters'),
+        processParameters = cms.vstring('MSEL = 1        ! QCD hight pT processes', 
+            'CKIN(3) = 15    ! minimum pt hat for hard interactions', 
+            'CKIN(4) = 3000  ! maximum pt hat for hard interactions', 
+            'MSTP(142) = 2   ! Turns on the PYWEVT Pt reweighting routine'),
+        pythiaUESettings = cms.vstring('MSTU(21)=1     ! Check on possible errors during program execution', 
+            'MSTJ(22)=2     ! Decay those unstable particles', 
+            'PARJ(71)=10 .  ! for which ctau  10 mm', 
+            'MSTP(33)=0     ! no K factors in hard cross sections', 
+            'MSTP(2)=1      ! which order running alphaS', 
+            'MSTP(51)=10042 ! structure function chosen (external PDF CTEQ6L1)', 
+            'MSTP(52)=2     ! work with LHAPDF', 
+            'PARP(82)=1.921 ! pt cutoff for multiparton interactions', 
+            'PARP(89)=1800. ! sqrts for which PARP82 is set', 
+            'PARP(90)=0.227 ! Multiple interactions: rescaling power', 
+            'MSTP(95)=6     ! CR (color reconnection parameters)', 
+            'PARP(77)=1.016 ! CR', 
+            'PARP(78)=0.538 ! CR', 
+            'PARP(80)=0.1   ! Prob. colored parton from BBR', 
+            'PARP(83)=0.356 ! Multiple interactions: matter distribution parameter', 
+            'PARP(84)=0.651 ! Multiple interactions: matter distribution parameter', 
+            'PARP(62)=1.025 ! ISR cutoff', 
+            'MSTP(91)=1     ! Gaussian primordial kT', 
+            'PARP(93)=10.0  ! primordial kT-max', 
+            'MSTP(81)=21    ! multiple parton interactions 1 is Pythia default', 
+            'MSTP(82)=4     ! Defines the multi-parton model')
+    ),
+    comEnergy = cms.double(7000.0),
+    crossSection = cms.untracked.double(22126820000.0),
+    filterEfficiency = cms.untracked.double(1),
+    maxEventsToPrint = cms.untracked.int32(0),
+    pythiaHepMCVerbosity = cms.untracked.bool(False),
+    pythiaPylistVerbosity = cms.untracked.int32(0)
 )
 
 
@@ -103,6 +124,9 @@ from Configuration.GenProduction.rivet_customize import customise
 #call to customisation function customise imported from Configuration.GenProduction.rivet_customize
 process = customise(process)
 
-# End of customisation functions
-process.rivetAnalyzer.AnalysisNames = cms.vstring('CMS_2013_I1224539_DIJET')
+process.rivetAnalyzer.AnalysisNames = cms.vstring('CMS_2015_FWD071')
 process.rivetAnalyzer.OutputFile = cms.string('mcfile.yoda')
+process.rivetAnalyzer.UseExternalWeight = cms.bool(True)
+
+# End of customisation functions
+
