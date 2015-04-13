@@ -21,9 +21,6 @@ process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 
-process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(100)
-)
 
 # Input source
 process.source = cms.Source("EmptySource")
@@ -98,7 +95,8 @@ process.generator = cms.EDFilter("Pythia6GeneratorFilter",
             'MSTP(82)=4     ! Defines the multi-parton model')
     ),
     comEnergy = cms.double(7000.0),
-    crossSection = cms.untracked.double(22126820000.0),
+    #crossSection = cms.untracked.double(22126820000.0),
+    crossSection = cms.untracked.double(8.738e+08),
     filterEfficiency = cms.untracked.double(1),
     maxEventsToPrint = cms.untracked.int32(0),
     pythiaHepMCVerbosity = cms.untracked.bool(False),
@@ -129,10 +127,16 @@ process = customise(process)
 process.rivetAnalyzer.AnalysisNames = cms.vstring('CMS_2015_FWD071')
 process.rivetAnalyzer.OutputFile = cms.string('mcfile.yoda')
 process.rivetAnalyzer.UseExternalWeight = cms.bool(True)
+process.rivetAnalyzer.CrossSection = cms.double(8.738e+08)
+#process.rivetAnalyzer.CrossSection = cms.double(2.226e+10)
+#process.rivetAnalyzer.CrossSection = cms.double(1000)
 
 # End of customisation functions
 
 #process.MessageLogger.cerr.threshold
-process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(50)
+process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(100)
+process.maxEvents = cms.untracked.PSet(
+    input = cms.untracked.int32(5000)
+)
 
 

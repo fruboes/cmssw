@@ -54,6 +54,8 @@ class RivetAnalyzer : public edm::EDAnalyzer
   bool                     _doFinalize;
   bool                     _produceDQM;
 
+  double _xsection;
+
   DQMStore *dbe;
   std::vector<MonitorElement *> _mes;
 };

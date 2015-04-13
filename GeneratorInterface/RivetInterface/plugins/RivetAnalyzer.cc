@@ -51,11 +51,14 @@ _produceDQM(pset.getParameter<bool>("ProduceDQMOutput"))
   std::set< AnaHandle, CmpAnaHandle >::const_iterator ibeg = analyses.begin();
   std::set< AnaHandle, CmpAnaHandle >::const_iterator iend = analyses.end();
   std::set< AnaHandle, CmpAnaHandle >::const_iterator iana; 
-  double xsection = -1.;
-  xsection = pset.getParameter<double>("CrossSection");
+  _xsection = pset.getParameter<double>("CrossSection");
   for (iana = ibeg; iana != iend; ++iana){
-    if ((*iana)->needsCrossSection())
-      (*iana)->setCrossSection(xsection);
+
+    std::cout << "rstart: " << _xsection << std::endl;
+    if ((*iana)->needsCrossSection()){
+        std::cout << " settiong" << std::endl;
+      (*iana)->setCrossSection(_xsection);
+    }
   }
   if (_produceDQM){
     // book stuff needed for DQM
@@ -99,11 +102,24 @@ void RivetAnalyzer::analyze(const edm::Event& iEvent,const edm::EventSetup& iSet
       throw cms::Exception("RivetAnalyzer") << "Original weight container has 0 size ";
     }
     if (tmpGenEvtPtr->weights().size() > 1) {
-      edm::LogWarning("RivetAnalyzer") << "Original event weight size is " << tmpGenEvtPtr->weights().size() << ". Will change only the first one ";  
+      //edm::LogWarning("RivetAnalyzer") << "Original event weight size is " << tmpGenEvtPtr->weights().size() << ". Will change only the first one ";  
     }
+
+    /*
+    std::cout << tmpGenEvtPtr->cross_section()->cross_section() 
+            << " " << tmpGenEvtPtr->cross_section()->cross_section_error()
+            << std::endl;*/
+
     edm::Handle<GenEventInfoProduct> genEventInfoProduct;
     iEvent.getByLabel(_genEventInfoCollection, genEventInfoProduct);
-    tmpGenEvtPtr->weights()[0] = genEventInfoProduct->weight();
+    //tmpGenEvtPtr->weights()[0] = genEventInfoProduct->weight();
+    tmpGenEvtPtr->weights().clear();
+    tmpGenEvtPtr->weights().push_back( genEventInfoProduct->weightProduct());
+    HepMC:: GenCrossSection xs;
+    xs.set_cross_section(_xsection);
+    tmpGenEvtPtr->set_cross_section(xs);
+
+
     myGenEvent = tmpGenEvtPtr; 
   }
     

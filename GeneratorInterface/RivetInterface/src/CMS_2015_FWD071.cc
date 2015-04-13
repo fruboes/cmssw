@@ -17,7 +17,10 @@ namespace Rivet {
     /// Constructor
     CMS_2015_FWD071()
       : Analysis("CMS_2015_FWD071")
-    {    }
+    {    
+        //setBeams(PROTON, PROTON);
+        setNeedsCrossSection(true);
+    }
 
 
     /// @name Analysis methods
@@ -118,7 +121,7 @@ namespace Rivet {
                     } 
                     // error msg flood should be enough to catch attention..
                     else {
-                        std::cout << "Warning: not known analysis type " << aType << std::endl;
+                        //std::cout << "Warning: not known analysis type " << aType << std::endl;
                     }
 
               }
@@ -126,7 +129,7 @@ namespace Rivet {
           for (size_t ideta = 0; ideta < dEtas.size(); ++ideta){
                 _histos[aType]->fill(dEtas.at(ideta),  weight);
                 _histos[aType+"Unit"]->fill(dEtas.at(ideta),  weight);
-                std::cout << aType << " " << dEtas.at(ideta) << " " << weight << std::endl;
+                //std::cout << aType << " " << dEtas.at(ideta) << " " << weight << std::endl;
           }
           // */
       }  
@@ -134,6 +137,8 @@ namespace Rivet {
 
     /// Normalise histograms etc., after the run
     void finalize() {
+
+      std::cout << "Got xs: " << crossSection() << std::endl;
       for (size_t iAna = 0; iAna < _anaTypes.size(); ++iAna){
           std::string aType = _anaTypes.at(iAna);
           scale(_histos[aType], crossSection()/sumOfWeights());
