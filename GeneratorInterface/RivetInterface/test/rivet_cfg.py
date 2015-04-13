@@ -68,11 +68,13 @@ process.generator = cms.EDFilter("Pythia6GeneratorFilter",
             'PTPOWER = 4.5   ! reweighting of the pt spectrum'),
         parameterSets = cms.vstring('pythiaUESettings', 
             'processParameters', 
-            'CSAParameters'),
+            'CSAParameters'
+            ),
         processParameters = cms.vstring('MSEL = 1        ! QCD hight pT processes', 
             'CKIN(3) = 15    ! minimum pt hat for hard interactions', 
             'CKIN(4) = 3000  ! maximum pt hat for hard interactions', 
-            'MSTP(142) = 2   ! Turns on the PYWEVT Pt reweighting routine'),
+            'MSTP(142) = 2   ! Turns on the PYWEVT Pt reweighting routine'
+            ),
         pythiaUESettings = cms.vstring('MSTU(21)=1     ! Check on possible errors during program execution', 
             'MSTJ(22)=2     ! Decay those unstable particles', 
             'PARJ(71)=10 .  ! for which ctau  10 mm', 
@@ -129,4 +131,8 @@ process.rivetAnalyzer.OutputFile = cms.string('mcfile.yoda')
 process.rivetAnalyzer.UseExternalWeight = cms.bool(True)
 
 # End of customisation functions
+
+#process.MessageLogger.cerr.threshold
+process.MessageLogger.cerr.FwkReport.reportEvery = cms.untracked.int32(50)
+
 
