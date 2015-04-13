@@ -47,7 +47,8 @@ namespace Rivet {
        bins.push_back(8.0);
        bins.push_back(9.4);
 
-
+      // note: order defined in do.py
+      //  todoCatAll = ["InclusiveBasic", "InclusiveAsym", "InclusiveWindow", "MNBasic", "MNAsym", "MNWindow"]
       _anaTypes.push_back("InclusiveBasic");
       _anaTypes.push_back("InclusiveAsym");
       _anaTypes.push_back("InclusiveWindow");
@@ -56,8 +57,11 @@ namespace Rivet {
       _anaTypes.push_back("MNWindow");
       for (size_t iAna = 0; iAna < _anaTypes.size(); ++iAna){
           std::string aType = _anaTypes.at(iAna);
-          _histos[aType] = bookHisto1D(aType, bins);
-          _histos[aType+"Unit"] = bookHisto1D(aType+"Unit", bins);
+          _histos[aType] = bookHisto1D(iAna+1, 1, 1);
+          _histos[aType+"Unit"] = bookHisto1D(iAna+11,1,1);
+          //_histos[aType] = bookHisto1D(aType, bins);
+          //_histos[aType+"Unit"] = bookHisto1D(aType+"Unit", bins);
+          //
       }
     }
 
@@ -122,7 +126,7 @@ namespace Rivet {
           for (size_t ideta = 0; ideta < dEtas.size(); ++ideta){
                 _histos[aType]->fill(dEtas.at(ideta),  weight);
                 _histos[aType+"Unit"]->fill(dEtas.at(ideta),  weight);
-                //std::cout << aType << " " << dEtas.at(ideta) << " " << weight << std::endl;
+                std::cout << aType << " " << dEtas.at(ideta) << " " << weight << std::endl;
           }
           // */
       }  
