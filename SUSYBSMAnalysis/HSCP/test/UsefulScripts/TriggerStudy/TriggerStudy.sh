@@ -1,9 +1,10 @@
 #!/bin/bash
 root -l -b << EOF
   TString makeshared(gSystem->GetMakeSharedLib());
-  TString dummy = makeshared.ReplaceAll("-W ", "");
-  gSystem->SetMakeSharedLib(makeshared);
-  TString dummy = makeshared.ReplaceAll("-Wshadow ", "");
+  makeshared.ReplaceAll("-W ", "-Wno-deprecated-declarations -Wno-deprecated -Wno-unused-local-typedefs -Wno-attributes ");
+  makeshared.ReplaceAll("-Woverloaded-virtual ", " ");
+  makeshared.ReplaceAll("-Wshadow ", " -std=c++0x -D__USE_XOPEN2K8 ");
+  cout << "Compilling with the following arguments: " << makeshared << endl;
   gSystem->SetMakeSharedLib(makeshared);
   gSystem->Load("libFWCoreFWLite");
   AutoLibraryLoader::enable();
