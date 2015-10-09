@@ -131,6 +131,8 @@ def CreateTheShellFile(argv):
 	shell_file.write('#! /bin/sh\n')
 	shell_file.write(CopyRights + '\n')
         shell_file.write('pwd\n')
+        if 'cis.gov.pl' in hostname:
+            shell_file.write('source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
  
         if 'purdue.edu' in hostname:
             shell_file.write('source /cvmfs/cms.cern.ch/cmsset_default.sh\n')
@@ -141,6 +143,8 @@ def CreateTheShellFile(argv):
 
         if 'purdue.edu' in hostname:
             shell_file.write('export VO_CMS_SW_DIR=/apps/osg/cmssoft/cms\n')
+        elif 'cis.gov.pl' in hostname:
+            shell_file.write('export VO_CMS_SW_DIR=/cvmfs/cms.cern.ch\n')
         else: 
             shell_file.write('export VO_CMS_SW_DIR='+os.getenv("VO_CMS_SW_DIR","/nfs/soft/cms")+'\n')            
 	#shell_file.write('source /nfs/soft/cms/cmsset_default.sh\n')
