@@ -161,7 +161,7 @@ void InitBaseDirectory(){
    }else if(host.find("ingrid-ui")!=std::string::npos){
       BaseDirectory = "/storage/data/cms/users/quertenmont/HSCP/2015/"; // run2 ingrid
    }else if(host.find(".cis.gov.pl")!=std::string::npos){
-      BaseDirectory = "root://se.cis.gov.pl//cms/store/user/fruboes/HSCP/"; // run2 Swierk
+      BaseDirectory = "root://se.cis.gov.pl//cms/store/user/fruboes/HSCP/15_03_25_HSCP_Run2EDMFiles/"; // run2 Swierk
    }else{
       BaseDirectory = "dcache:/pnfs/cms/WAX/11/store/user/venkat12/2012Data/";  //for run1
       printf("YOUR MACHINE (%s) IS NOT KNOWN --> please add your machine to the 'InitBaseDirectory' function of 'Analysis_Global.h'\n", host.c_str());
