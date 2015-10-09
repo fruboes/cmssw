@@ -5,7 +5,6 @@ import subprocess, os, sys
 # note: make sure you have valid proxy
 
 def main():
-
     version = "15_03_25_HSCP_Run2EDMFiles"
     src = ("root://eoscms.cern.ch/", "/eos/cms/store/cmst3/user/querten/"+version+"/")
     trg = ("root://se.cis.gov.pl/",  "/cms/store/user/fruboes/HSCP/"+version+"/")
