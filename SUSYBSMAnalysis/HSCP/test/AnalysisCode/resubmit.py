@@ -38,6 +38,7 @@ with open(cmdfile) as f:
         line = l.strip()
         for t in todo:
             if t in line:
-                os.system(line)
+                print line
+                #os.system(line)
                 break
 
